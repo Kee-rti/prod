@@ -1,0 +1,71 @@
+Evaluation Reflection
+
+Summary of key metrics:
+- Accuracy: 71.33%
+- Precision (class 1 = focused): 0.6829
+- Recall (class 1 = focused): 0.9663
+- F1 (class 1): 0.8003
+- ROC AUC: 0.8934
+
+Confusion matrix (rows=true, cols=pred):
+[[146, 280],
+ [21, 603]]
+
+Interpretation:
+- The model is strongly biased toward predicting class 1 (focused). This is
+  visible in the high recall for class 1 (0.966) and the large number of false
+  positives (280): many true class 0 samples are predicted as class 1.
+- Class 0 (distracted) has poor recall (0.343) and modest precision (0.874),
+  meaning the model misses many distracted sessions and often labels things as
+  focused.
+- Overall ROC AUC (0.893) shows the model has good separability in probability
+  space, but the default 0.5 threshold leads to an imbalanced trade-off.
+
+Likely causes:
+- The synthetic data generation and label definitions may make the two classes
+  overlap in feature space; some distracted-looking sessions share features
+  with focused ones.
+- Logistic regression is linear and may be underfitting non-linear patterns.
+- No class weighting or threshold calibration was applied; training optimized
+  a balanced loss but inference used 0.5 threshold which favors the larger
+  or easier-to-separate class.
+
+Recommended next steps:
+1. Threshold sweep: compute precision/recall/F1 across thresholds and choose
+   one that balances false positives vs false negatives according to product
+   goals (e.g., prefer fewer false negatives if missing distraction is costly).
+2. Class weighting or resampling: try weighting the loss toward class 0 or
+   oversampling distracted examples to improve class 0 recall.
+3. Use cross-validation and tune regularization (lambda) and learning rate.
+4. Try more expressive models (RandomForest, XGBoost, or a small MLP) to
+   capture non-linear interactions between duration, scroll, keys, and switches.
+5. Feature engineering: add ratio/derived features (scroll per minute,
+   keys per minute, switch rate), temporal features, or session metadata.
+6. Evaluate on held-out realistic data, not only synthetic samples.
+
+Quick commands to explore threshold trade-offs (run from project root):
+python -u ml_lab/evaluate_model.py  # generates eval_results.json
+
+---
+
+XGBoost training & results (new)
+
+I trained an XGBoost classifier with cross-validation, oversampling to balance classes, and inverse-frequency sample weights. Key results saved under `extension/model`:
+
+- Accuracy: 98.57%
+- Precision: 0.9856
+- Recall: 0.9904
+- F1: 0.9880
+- ROC AUC: 0.9924
+- Confusion matrix: [[417, 9], [6, 618]]
+
+Notes:
+- The model now achieves very high recall for both classes; false negatives for the previously-missed class (distracted) dropped dramatically (only 9 distracted labelled as focused in the confusion matrix), addressing the earlier concern.
+- Improvements came from balancing the training set (oversampling the minority class) and using sample weights during cross-validated training, plus a more expressive model (XGBoost).
+
+Next options:
+1. Run a threshold sweep on XGBoost probabilities to pick a decision threshold that fits your risk tolerance.
+2. Persist the best model and add it to the extension's inference pipeline (`extension/lib/inference.js`) — I can generate the JS
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ predictor next.
+3. Add feature engineering or temporal context for further gains.
+

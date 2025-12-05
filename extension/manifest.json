@@ -1,0 +1,44 @@
+{
+    "manifest_version": 3,
+    "name": "Focus Tracker",
+    "version": "1.0",
+    "description": "Tracks productivity and classifies sessions as Focused or Distracted.",
+    "permissions": [
+        "tabs",
+        "storage",
+        "scripting",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_start"
+        }
+    ],
+    "action": {
+        "default_popup": "popup/dashboard.html",
+        "default_title": "Focus Tracker Stats"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "model/weights.json",
+                "lib/inference.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ]
+}
