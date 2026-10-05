@@ -49,14 +49,17 @@ async function initializeTabTelemetryState() {
             };
         }
 
-        // Rehydrate the currently active tab for each window after a
-        // service-worker restart. storage.session survives worker suspension.
+        // Seed only windows that are not already represented. For existing
+        // windows, preserve the previous active tab so an onActivated event
+        // can correctly detect a switch after worker suspension.
         const activeTabs = await chrome.tabs.query({ active: true });
         for (const tab of activeTabs) {
             if (tab.id == null || tab.windowId == null) continue;
 
             const windowKey = String(tab.windowId);
-            tabTelemetryState.activeTabByWindow[windowKey] = tab.id;
+            if (tabTelemetryState.activeTabByWindow[windowKey] == null) {
+                tabTelemetryState.activeTabByWindow[windowKey] = tab.id;
+            }
 
             if (tabTelemetryState.switchCountByWindow[windowKey] == null) {
                 tabTelemetryState.switchCountByWindow[windowKey] = 0;
