@@ -25,11 +25,11 @@ let telemetryWriteChain = Promise.resolve();
 
 // Register browser event listeners synchronously for MV3 service-worker reliability.
 chrome.tabs.onActivated.addListener((activeInfo) => {
-    registerTabActivation(activeInfo);
+    telemetryStateReady.then(() => registerTabActivation(activeInfo));
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-    removeTabFromTelemetryState(tabId);
+    telemetryStateReady.then(() => removeTabFromTelemetryState(tabId));
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
