@@ -32,6 +32,10 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     telemetryStateReady.then(() => removeTabFromTelemetryState(tabId));
 });
 
+chrome.windows.onRemoved.addListener((windowId) => {
+    telemetryStateReady.then(() => removeWindowFromTelemetryState(windowId));
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'HEARTBEAT') {
         handleHeartbeat(message.payload, sender).then(sendResponse);
@@ -109,6 +113,24 @@ function removeTabFromTelemetryState(tabId) {
 function getTabSwitchCount(windowId) {
     if (windowId == null) return 0;
     return tabTelemetryState.switchCountByWindow[String(windowId)] || 0;
+}
+
+function removeWindowFromTelemetryState(windowId) {
+    const windowKey = String(windowId);
+    const hadActiveTab = Object.prototype.hasOwnProperty.call(
+        tabTelemetryState.activeTabByWindow,
+        windowKey
+    );
+    const hadSwitchCount = Object.prototype.hasOwnProperty.call(
+        tabTelemetryState.switchCountByWindow,
+        windowKey
+    );
+
+    if (!hadActiveTab && !hadSwitchCount) return;
+
+    delete tabTelemetryState.activeTabByWindow[windowKey];
+    delete tabTelemetryState.switchCountByWindow[windowKey];
+    void persistTabTelemetryState();
 }
 
 function persistTabTelemetryState() {
